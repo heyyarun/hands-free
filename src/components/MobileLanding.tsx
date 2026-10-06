@@ -9,8 +9,8 @@ const SITE_URL = 'https://www.handfree.live/'
  * The demo needs a desktop webcam, but most people arrive from a link tapped on their
  * phone. This used to be a single sentence telling them to leave; now it shows what the
  * page does, lets them send the link to a laptop, and points at the repo, so the visit
- * is not wasted. It is in the DOM on every screen size and only shown below 1024px,
- * which also gives mobile-first crawlers real text to index.
+ * is not wasted. main.tsx mounts it instead of the demo below 1024px, so a phone never
+ * downloads three.js or MediaPipe.
  */
 export function MobileLanding() {
   const [copied, setCopied] = useState(false)
@@ -39,11 +39,11 @@ export function MobileLanding() {
       </p>
       <img
         className="mobile-shot"
-        src="/og.png"
+        src="/landing-shot.webp"
         alt="The Hands Free demo page on a desktop display"
-        width="1200"
-        height="630"
-        loading="lazy"
+        width="800"
+        height="420"
+        fetchPriority="high"
       />
       <p className="mobile-note">It needs a laptop or desktop webcam, so open it there.</p>
       <button className="start-button" onClick={sendLink}>

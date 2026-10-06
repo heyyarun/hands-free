@@ -11,15 +11,9 @@ export default defineConfig({
   },
   build: {
     target: 'es2022',
-    // three + mediapipe are both large; a single vendor chunk keeps the
-    // waterfall short since we need all of it before the first frame anyway.
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (id.includes('node_modules/three')) return 'three'
-          if (id.includes('node_modules/@mediapipe')) return 'mediapipe'
-        },
-      },
-    },
+    // No manual chunks: App and Game are lazy (see main.tsx), so three.js and MediaPipe
+    // land in chunks only those pages import, and the landing a phone gets needs neither.
+    // A manualChunks rule for them also captured Vite's dynamic-import helper, which made
+    // the entry preload all of MediaPipe.
   },
 })

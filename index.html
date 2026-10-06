@@ -44,10 +44,23 @@
     <link rel="icon" type="image/svg+xml" sizes="any" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Fonts load without blocking first paint: the page renders in system fonts and swaps
+         (display=swap) once these arrive. -->
     <link
       href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&family=Inter:wght@300;400;500;600&display=swap"
       rel="stylesheet"
+      media="print"
+      onload="this.media='all'"
     />
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&family=Inter:wght@300;400;500;600&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
+    <!-- The small-screen landing's screenshot is its largest element; fetch it alongside the
+         JS instead of after it. Desktop never loads it. -->
+    <link rel="preload" as="image" href="/landing-shot.webp" type="image/webp" media="(max-width: 1023px)" fetchpriority="high" />
   </head>
   <body>
     <div id="root"></div>

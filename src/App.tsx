@@ -1,12 +1,11 @@
-import { useEffect, useMemo, useRef, useSyncExternalStore } from 'react'
-import { Canvas, useFrame } from '@react-three/fiber'
-import { Bloom, EffectComposer, Vignette } from '@react-three/postprocessing'
-import { AdditiveBlending, Color, InstancedMesh, MathUtils, Object3D, Vector3 } from 'three'
+import { lazy, Suspense, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { CameraLayer } from './components/CameraLayer'
 import { KEYBOARD_CONTROLS, REPO_URL } from './config'
 import { jumpToNextSection, jumpToPreviousSection, updateControl } from './cv/gestures'
 import { useHandTracking } from './cv/useHandTracking'
 import { frame, getUi, setUi, subscribeUi, type ControlMode, type UiState } from './state/store'
+
+const ParticleScene = lazy(() => import('./components/ParticleScene'))
 
 const sections = [
   {
@@ -53,86 +52,49 @@ function modeLabel(mode: ControlMode): string {
   }
 }
 
-function SceneParticles() {
-  const mesh = useRef<InstancedMesh>(null)
-  const dummy = useMemo(() => new Object3D(), [])
-  const color = useMemo(() => new Color(), [])
-  const points = useMemo(() => {
-    const out: Array<{ base: Vector3; phase: number; size: number; tint: number }> = []
-    for (let i = 0; i < 760; i++) {
-      const ring = Math.sqrt(Math.random()) * 7.2
-      const theta = Math.random() * Math.PI * 2
-      out.push({
-        base: new Vector3(Math.cos(theta) * ring, (Math.random() - 0.5) * 5.2, Math.sin(theta) * ring),
-        phase: Math.random() * Math.PI * 2,
-        size: MathUtils.randFloat(0.018, 0.072),
-        tint: Math.random(),
-      })
-    }
-    return out
-  }, [])
-
-  useEffect(() => {
-    if (!mesh.current) return
-    points.forEach((point, i) => {
-      color.setHSL(0.45 + point.tint * 0.2, 0.72, 0.58)
-      mesh.current!.setColorAt(i, color)
-    })
-    mesh.current.instanceColor!.needsUpdate = true
-  }, [color, points])
-
-  useFrame(({ clock, camera }) => {
-    if (!mesh.current) return
-    const t = clock.elapsedTime
-    const cx = (frame.cursorX - 0.5) * 8
-    const cy = (0.5 - frame.cursorY) * 5
-    const strength = frame.cursorStrength
-    const pinch = frame.cursorPinch
-    const scroll = frame.scroll / Math.max(frame.maxScroll, 1)
-    const zoom = frame.zoom
-
-    camera.position.x = MathUtils.lerp(camera.position.x, (frame.cursorX - 0.5) * 1.1 * strength, 0.05)
-    camera.position.y = MathUtils.lerp(camera.position.y, (0.5 - frame.cursorY) * 0.7 * strength, 0.05)
-    camera.position.z = MathUtils.lerp(camera.position.z, 8.2 / zoom, 0.04)
-    camera.lookAt(0, 0, 0)
-
-    points.forEach((point, i) => {
-      const wave = Math.sin(t * 0.55 + point.phase + scroll * 5)
-      const x = point.base.x + Math.sin(t * 0.23 + point.phase) * 0.22
-      const y = point.base.y + wave * 0.18
-      const z = point.base.z + Math.cos(t * 0.31 + point.phase) * 0.35 + scroll * 2.6
-      const dx = x - cx
-      const dy = y - cy
-      const dist = Math.max(Math.hypot(dx, dy), 0.001)
-      const repel = strength * (0.55 + pinch * 1.3) / (dist * dist + 0.25)
-
-      dummy.position.set(x + (dx / dist) * repel, y + (dy / dist) * repel, z)
-      dummy.rotation.set(t * 0.12 + point.phase, t * 0.2, point.phase)
-      dummy.scale.setScalar(point.size * (1 + strength * 1.6 + pinch * 1.2))
-      dummy.updateMatrix()
-      mesh.current!.setMatrixAt(i, dummy.matrix)
-    })
-    mesh.current.instanceMatrix.needsUpdate = true
-  })
-
-  return (
-    <instancedMesh ref={mesh} args={[undefined, undefined, points.length]}>
-      <dodecahedronGeometry args={[1, 0]} />
-      <meshBasicMaterial transparent opacity={0.68} blending={AdditiveBlending} depthWrite={false} />
-    </instancedMesh>
-  )
+/**
+ * Whether WebGL runs on a real GPU. Software renderers (SwiftShader, llvmpipe: VMs, remote
+ * desktops, Chrome with hardware acceleration off, headless test machines) draw on the CPU,
+ * where bloom over 760 particles takes longer than a frame and freezes the whole page.
+ */
+function hasHardwareWebGL(): boolean {
+  const gl = document.createElement('canvas').getContext('webgl')
+  if (!gl) return false
+  const info = gl.getExtension('WEBGL_debug_renderer_info')
+  const renderer = info ? String(gl.getParameter(info.UNMASKED_RENDERER_WEBGL)) : ''
+  gl.getExtension('WEBGL_lose_context')?.loseContext()
+  return !/swiftshader|llvmpipe|software|basic render/i.test(renderer)
 }
 
+type StageMode = 'pending' | 'animated' | 'still'
+
 function Stage() {
+  // The scene is decoration: the headline and the panel are the page. Creating the WebGL
+  // context and compiling the bloom shaders blocks the main thread for a second or more on
+  // a slow machine, so it waits until the text has painted and the browser is idle.
+  const [mode, setMode] = useState<StageMode>('pending')
+
+  useEffect(() => {
+    const start = () => setMode(hasHardwareWebGL() ? 'animated' : 'still')
+    if (typeof requestIdleCallback === 'function') {
+      const id = requestIdleCallback(start, { timeout: 2000 })
+      return () => cancelIdleCallback(id)
+    }
+    const id = window.setTimeout(start, 300)
+    return () => window.clearTimeout(id)
+  }, [])
+
+  if (mode === 'pending') return null
+
+  // Without a GPU even one frame is expensive: creating the renderer and compiling its
+  // shaders on the CPU blocks the page for a second or two. Show a picture of the particle
+  // field instead (public/stage-still.webp, captured from the live scene).
+  if (mode === 'still') return <div className="stage stage-still" aria-hidden="true" />
+
   return (
-    <Canvas camera={{ position: [0, 0, 8.2], fov: 46 }} dpr={[1, 1.8]} gl={{ antialias: true, alpha: true }}>
-      <color attach="background" args={['#05060a']} />
-      <SceneParticles />
-      <EffectComposer multisampling={0}>
-        <Bloom intensity={0.72} luminanceThreshold={0.08} luminanceSmoothing={0.8} mipmapBlur />
-        <Vignette offset={0.18} darkness={0.64} />
-      </EffectComposer>
-    </Canvas>
+    <Suspense fallback={null}>
+      <ParticleScene />
+    </Suspense>
   )
 }
 
