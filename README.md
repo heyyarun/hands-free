@@ -98,7 +98,11 @@ Press **S** to download, save the file as `src/game/fixtures/webcam-*.json`, and
 
 ## Credits
 
-T-Rex game rules and tuning are ported from Chromium's offline dino game (BSD license).
-The sprites are original.
+T-Rex game rules and tuning are ported from Chromium's offline dino game (BSD license;
+its notice is kept in `src/game/constants.ts`). The sprites are original.
 
 Built with [offrun.dev](https://www.offrun.dev).
+
+## License
+
+MIT, see [LICENSE](LICENSE).

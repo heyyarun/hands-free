@@ -1,6 +1,6 @@
 import { useEffect, useRef, useSyncExternalStore } from 'react'
 import { CameraLayer } from '../components/CameraLayer'
-import { KEYBOARD_CONTROLS } from '../config'
+import { KEYBOARD_CONTROLS, REPO_URL } from '../config'
 import { useHandTracking } from '../cv/useHandTracking'
 import { frame, getUi, setUi, subscribeUi, type UiState } from '../state/store'
 import { HandInput } from './input'
@@ -184,6 +184,9 @@ function GamePanel({ onStart, onStop }: { onStart: () => void; onStop: () => voi
       <p className="panel-note">Pinch thumb to index with your other fingers straight, like an OK sign.</p>
       <a className="switch-link" href="#">
         ← Scroll demo
+      </a>
+      <a className="repo-link" href={REPO_URL} target="_blank" rel="noreferrer">
+        Open source on GitHub ↗
       </a>
       {ui.error ? <p className="error">{ui.error}</p> : null}
     </aside>

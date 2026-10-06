@@ -1,6 +1,7 @@
 {
   "name": "hands-free",
   "private": true,
+  "license": "MIT",
   "version": "0.1.0",
   "type": "module",
   "description": "Gesture-controlled three.js demo — scroll and zoom a website with your hands",

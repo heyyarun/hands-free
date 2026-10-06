@@ -1,6 +1,7 @@
 import { StrictMode, useSyncExternalStore } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
+import { MobileLanding } from './components/MobileLanding'
 import { PromoBar } from './components/PromoBar'
 import Game from './game/Game'
 import './styles.css'
@@ -17,6 +18,7 @@ function Root() {
     <>
       <PromoBar />
       {hash === '#game' ? <Game /> : <App />}
+      <MobileLanding />
     </>
   )
 }

@@ -3,7 +3,7 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import { Bloom, EffectComposer, Vignette } from '@react-three/postprocessing'
 import { AdditiveBlending, Color, InstancedMesh, MathUtils, Object3D, Vector3 } from 'three'
 import { CameraLayer } from './components/CameraLayer'
-import { KEYBOARD_CONTROLS } from './config'
+import { KEYBOARD_CONTROLS, REPO_URL } from './config'
 import { jumpToNextSection, jumpToPreviousSection, updateControl } from './cv/gestures'
 import { useHandTracking } from './cv/useHandTracking'
 import { frame, getUi, setUi, subscribeUi, type ControlMode, type UiState } from './state/store'
@@ -263,6 +263,9 @@ function ControlsPanel({ onStart, onStop }: { onStart: () => void; onStop: () =>
       <a className="switch-link" href="#game">
         Play T-Rex with your hands →
       </a>
+      <a className="repo-link" href={REPO_URL} target="_blank" rel="noreferrer">
+        Open source on GitHub ↗
+      </a>
       {ui.error ? <p className="error">{ui.error}</p> : null}
     </aside>
   )
@@ -292,7 +295,12 @@ function Content({ contentRef }: { contentRef: React.RefObject<HTMLDivElement | 
         {sections.map((section, index) => (
           <section className="story-section" data-section key={section.kicker}>
             <p className="kicker">{section.kicker}</p>
-            <h1>{section.title}</h1>
+            {/* One h1 for the page; the later sections are subsections of it. */}
+            {index === 0 ? (
+              <h1 className="story-title">{section.title}</h1>
+            ) : (
+              <h2 className="story-title">{section.title}</h2>
+            )}
             <p className="body">{section.body}</p>
             <p className="accent">{section.accent}</p>
             <span className={ui.section === index ? 'section-mark active' : 'section-mark'}>{index + 1}</span>

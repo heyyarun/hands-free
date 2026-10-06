@@ -5,3 +5,6 @@
  * game are driven by hands. Turn them on to work on either one without a camera.
  */
 export const KEYBOARD_CONTROLS = import.meta.env.VITE_KEYBOARD_CONTROLS === 'true'
+
+/** The public repo, linked from both control panels and the small-screen landing. */
+export const REPO_URL = 'https://github.com/heyyarun/hands-free'
